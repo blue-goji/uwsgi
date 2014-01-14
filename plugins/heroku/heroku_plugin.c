@@ -7,7 +7,12 @@ extern struct uwsgi_server uwsgi;
 // after initial UNIX signal handling is set for generic plugins, and it 
 // seems safest to set this as late as possible.
 void uwsgi_heroku_hijack(void) {
-	uwsgi_block_signal(SIGTERM)
+	// all signals are blocked on most threads already; we also block
+	// SIGTERM on the main thread so Heroku can't directly kill worker processes.
+	sigset_t smask;
+	sigemptyset(&smask);
+	sigaddset(&smask, SIGTERM);
+	pthread_sigmask(SIG_BLOCK, &smask, NULL);
 	return;
 }
 
